@@ -1,91 +1,107 @@
 # 後端工程師技術測試
 
-## 技術要求
+## 專案簡介
 
-- .NET Core 8 Web API
-- SQL Server 2019+：資料庫 `Myoffice_ACPD`
-- 不限制 Entity Framework Core 或任何 ORM
-- Visual Studio 2022（需能執行 Swagger）
-- Git & GitHub
+本專案為 .NET 8 Web API，針對 SQL Server 資料庫中的 `MyOffice_ACPD` 資料表實作完整 CRUD 功能，並提供 Swagger UI 進行 API 測試。
 
-**參考資料：**（位於 `TSQLScript` 目錄）
-- `TSQL_Myoffice_ACPD.sql`：資料表結構定義
-- `NewSID_自訂一組固定欄位的代碼.sql`：主鍵產生範例（選用參考）
-- `TSQL_Myoffice_ExcuteionLog.sql`：執行日誌資料表（選用參考）
-- `usp_AddLog 記錄執行錯誤.sql`：日誌記錄 SP（選用參考）
+## 技術框架
 
----
+- .NET 8 Web API
+- Entity Framework Core 8 (SQL Server)
+- Swashbuckle (Swagger/OpenAPI)
+- SQL Server 2019+
 
-## 考試時限
-- 請在收到考題後的 2 小時內完成並提交
-- 時間從收到考題通知開始計算
-- 若有特殊情況無法於時限內完成，請主動來信說明原因
-
----
-
-## 專案要求
-
-### Web API
-- 實作完整 CRUD 功能，與資料庫互動（可使用 ORM、Dapper、ADO.NET 或 Stored Procedure）
-- 所有資料傳遞使用 JSON 格式（輸入/輸出）
-- Swagger 需包含測試用 JSON 資料並可正常呼叫
-- 按 F5 即可啟動並顯示 Swagger 介面
-
-**1. 正確使用 HTTP Method**
-- `GET`：查詢資料（不可使用 GET 進行資料異動）
-- `POST`：新增資料
-- `PUT / PATCH`：更新資料
-- `DELETE`：刪除資料
-
-**2. 資源導向 URL 設計**
-- URL 必須為資源導向（Resource-based）
-- 不可出現 `/GetData`、`/DeleteData` 這類動作型命名
+## 專案架構
 
 ```
-GET    /api/myofficeacpd          # 查詢所有資料
-GET    /api/myofficeacpd/{id}     # 查詢單筆資料
-POST   /api/myofficeacpd          # 新增資料
-PUT    /api/myofficeacpd/{id}     # 更新資料
-DELETE /api/myofficeacpd/{id}     # 刪除資料
+Interview/
+└── Interview.API/
+    ├── Controllers/
+    │   ├── GenericController.cs          # 基底 Controller，提供統一回應格式與錯誤處理
+    │   └── MyOfficeAcpdController.cs     # 使用者 CRUD Controller
+    ├── Filters/
+    │   └── SwaggerExampleSchemaFilter.cs  # Swagger 測試資料範例
+    ├── Models/
+    │   ├── Entities/                      # EF Core Power Tools 自動產生的實體模型
+    │   │   ├── BackendExamHub_Context.cs  # DbContext
+    │   │   ├── MyOffice_ACPD.cs           # ACPD 資料表實體
+    │   │   └── MyOffice_ExcuteionLog.cs   # 執行日誌實體
+    │   ├── Failures/
+    │   │   └── BaseFailure.cs             # 統一錯誤回應物件
+    │   ├── Requests/
+    │   │   ├── AddUserRequest.cs          # 新增使用者請求 DTO（含驗證）
+    │   │   └── UpdateUserRequest.cs       # 更新使用者請求 DTO（含驗證）
+    │   └── Responses/
+    │       └── UserResponse.cs            # 使用者回應 DTO
+    ├── Program.cs                         # 應用程式進入點與服務註冊
+    └── GlobalUsing.cs                     # 全域 using 宣告
+TSQLScript/
+    ├── TSQL_Myoffice_ACPD.sql             # ACPD 資料表 DDL
+    ├── TSQL_Myoffice_ExcuteionLog.sql     # 執行日誌資料表 DDL
+    ├── NewSID_自訂一組固定欄位的代碼.sql     # NEWSID 預存程序（主鍵產生）
+    └── usp_AddLog 記錄執行錯誤.sql          # usp_AddLog 預存程序（錯誤日誌）
 ```
 
-**3. 必須回傳正確的 HTTP Status Code**
-- `200 OK`：請求成功
-- `201 Created`：資源成功建立
-- `204 No Content`：請求成功但無回傳內容（通常用於 DELETE）
-- `400 Bad Request`：請求參數有誤
-- `404 Not Found`：資源不存在
-- `500 Internal Server Error`：伺服器內部錯誤
+## API 端點
 
-**4. Swagger 測試**
-- Swagger 必須可正常測試所有 RESTful Endpoint
-- 每個 API 附有測試用 JSON 資料
-- 可直接在 Swagger UI 進行完整的 CRUD 操作測試
+| HTTP Method | URL | 說明 | 回應狀態碼 |
+|---|---|---|---|
+| `GET` | `/api/myofficeacpd` | 查詢所有資料 | 200 / 500 |
+| `GET` | `/api/myofficeacpd/{id}` | 查詢單筆資料 | 200 / 400 / 404 / 500 |
+| `POST` | `/api/myofficeacpd` | 新增資料 | 201 / 400 / 500 |
+| `PUT` | `/api/myofficeacpd/{id}` | 更新資料 | 200 / 400 / 404 / 500 |
+| `DELETE` | `/api/myofficeacpd/{id}` | 刪除資料 | 204 / 400 / 404 / 500 |
 
-### SQL Server
-- 針對 `Myoffice_ACPD` 資料表實作 CRUD 功能：
-  - 新增資料：主鍵產生方式自行設計（可參考 `TSQLScript` 目錄內的 `NEWSID` 範例）
-  - 查詢資料：支援單筆與多筆查詢
-  - 更新資料：根據主鍵更新資料
-  - 刪除資料：根據主鍵刪除資料
-- 產出資料庫備份檔 `.bak`
-- 資料庫備份檔須可正常還原並包含完整測試資料
-- 如有使用 SQL Script，請一併推送至 GitHub
+## 設計說明
 
-### Git 版本管理
-- Repository 命名：`YourName_BackendTest_MidLevel`
-- `main` 分支：存放最終版本
-- `develop` 分支：開發主分支
-- 建立至少一個 feature 分支進行開發
-- Commit 訊息需清楚描述修改內容
+- **Request/Response DTO**：API 不直接暴露資料庫實體，透過 `AddUserRequest`、`UpdateUserRequest` 接收輸入，`UserResponse` 回傳結果
+- **資料驗證**：Request DTO 使用 `DataAnnotations` 驗證（`StringLength`、`EmailAddress`），由 `[ApiController]` 自動觸發，回傳 400 Bad Request
+- **主鍵產生**：新增資料時透過 `NEWSID` 預存程序產生 `ACPD_SID`
+- **錯誤日誌**：所有 catch 區塊透過 `usp_AddLog` 預存程序將錯誤寫入 `MyOffice_ExcuteionLog` 資料表
+- **統一回應格式**：透過 `GenericController` 的 `GenericContent()` 方法統一處理成功與失敗回應
 
----
+## 執行步驟
 
-## 繳交清單
+### 前置需求
 
-- [ ] GitHub Repository（包含分支管理記錄）
-- [ ] .NET Core 8 Web API 專案原始碼
-- [ ] Swagger 可正常執行 CRUD，每個 API 附有測試 JSON
-- [ ] SQL Server 資料庫備份檔 `.bak`（包含測試資料）
-- [ ] README 說明專案架構與執行步驟
-- [ ] 提供 GitHub Repository URL
+- .NET 8 SDK
+- SQL Server 2019+
+- Visual Studio 2022（建議）
+
+### 資料庫設定
+
+1. 在 SQL Server 中建立資料庫
+2. 依序執行 `TSQLScript/` 目錄下的 SQL 腳本建立資料表與預存程序
+3. 修改 `Interview/Interview.API/appsettings.json` 中的連線字串：
+
+```json
+{
+  "ConnectionStrings": {
+    "BackendExamHub": "Server=你的伺服器;Database=你的資料庫;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+### 啟動專案
+
+```bash
+# 使用 CLI 啟動（HTTP）
+dotnet run --project Interview/Interview.API
+
+# 使用 CLI 啟動（HTTPS）
+dotnet run --project Interview/Interview.API --launch-profile https
+```
+
+或在 Visual Studio 2022 中按 **F5** 即可啟動，瀏覽器會自動開啟 Swagger UI。
+
+### Swagger 測試
+
+- HTTP：`http://localhost:5220/swagger`
+- HTTPS：`https://localhost:7147/swagger`
+
+Swagger UI 中每個 API 端點皆已預填測試用 JSON 資料，可直接點選 "Try it out" 進行測試。
+
+## Git 分支管理
+
+- `main`：最終版本
+- `feature/implement-crud-api`：CRUD API 功能開發分支

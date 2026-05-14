@@ -14,7 +14,7 @@ namespace Interview.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                options.SchemaFilter<Interview.API.Filters.SwaggerExampleSchemaFilter>();
+                options.SchemaFilter<Filters.SwaggerExampleSchemaFilter>();
             });
 
             var app = builder.Build();
